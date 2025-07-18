@@ -3,10 +3,10 @@ from functools import cached_property
 
 from flask.wrappers import Request
 
-from authlib.oauth2.rfc6749 import JsonPayload
-from authlib.oauth2.rfc6749 import JsonRequest
-from authlib.oauth2.rfc6749 import OAuth2Payload
-from authlib.oauth2.rfc6749 import OAuth2Request
+from authlib.authlib.oauth2.rfc6749 import JsonPayload
+from authlib.authlib.oauth2.rfc6749 import JsonRequest
+from authlib.authlib.oauth2.rfc6749 import OAuth2Payload
+from authlib.authlib.oauth2.rfc6749 import OAuth2Request
 
 
 class FlaskOAuth2Payload(OAuth2Payload):

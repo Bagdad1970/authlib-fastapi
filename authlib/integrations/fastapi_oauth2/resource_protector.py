@@ -1,9 +1,9 @@
 import functools
 from contextlib import contextmanager
+import json
 
 from flask import g
-from flask import json
-from flask import request as _req
+from fastapi import Request as _req
 from werkzeug.local import LocalProxy
 
 from authlib.authlib.oauth2 import OAuth2Error
@@ -11,7 +11,7 @@ from authlib.authlib.oauth2 import ResourceProtector as _ResourceProtector
 from authlib.authlib.oauth2.rfc6749 import MissingAuthorizationError
 
 from .errors import raise_http_exception
-from .requests import FlaskJsonRequest
+from .requests import FastAPIJsonRequest
 from .signals import token_authenticated
 
 
@@ -64,7 +64,7 @@ class ResourceProtector(_ResourceProtector):
         :param scopes: a list of scope values
         :return: token object
         """
-        request = FlaskJsonRequest(_req)
+        request = FastAPIJsonRequest(_req)
         # backward compatibility
         kwargs["scopes"] = scopes
         for claim in kwargs:

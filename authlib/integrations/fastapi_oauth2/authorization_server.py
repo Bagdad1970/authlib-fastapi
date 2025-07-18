@@ -1,21 +1,20 @@
-from flask import Response
-from flask import json
-from flask import request as flask_req
+from fastapi import Response
 from werkzeug.utils import import_string
+import json
 
 from authlib.authlib.common.security import generate_token
 from authlib.authlib.oauth2 import AuthorizationServer as _AuthorizationServer
 from authlib.authlib.oauth2.rfc6750 import BearerTokenGenerator
 
-from .requests import FlaskJsonRequest
-from .requests import FlaskOAuth2Request
+from .requests import FastAPIJsonRequest
+from .requests import FastAPIOAuth2Request
 from .signals import client_authenticated
 from .signals import token_revoked
 
 
 class AuthorizationServer(_AuthorizationServer):
-    """Flask implementation of :class:`authlib.oauth2.rfc6749.AuthorizationServer`.
-    Initialize it with ``query_client``, ``save_token`` methods and Flask
+    """FastAPI implementation of :class:`authlib.oauth2.rfc6749.AuthorizationServer`.
+    Initialize it with ``query_client``, ``save_token`` methods and FastAPI
     app instance::
 
         def query_client(client_id):
@@ -39,48 +38,50 @@ class AuthorizationServer(_AuthorizationServer):
         server.init_app(app, query_client, save_token)
     """
 
-    def __init__(self, app=None, query_client=None, save_token=None):
+    def __init__(self, app=None, settings=None, query_client=None, save_token=None):
         super().__init__()
         self._query_client = query_client
         self._save_token = save_token
         self._error_uris = None
         if app is not None:
-            self.init_app(app)
+            self.init_app(app, settings)
 
-    def init_app(self, app, query_client=None, save_token=None):
-        """Initialize later with Flask app instance."""
+    def init_app(self, settings, query_client=None, save_token=None):
+        """Initialize later with FastAPI app instance."""
         if query_client is not None:
             self._query_client = query_client
         if save_token is not None:
             self._save_token = save_token
+        if settings is not None:
+            self._settings = settings.dict()
 
         self.register_token_generator(
-            "default", self.create_bearer_token_generator(app.config)
+            "default", self.create_bearer_token_generator(self._settings)
         )
-        self.scopes_supported = app.config.get("OAUTH2_SCOPES_SUPPORTED")
-        self._error_uris = app.config.get("OAUTH2_ERROR_URIS")
+        self.scopes_supported = self._settings.get("OAUTH2_SCOPES_SUPPORTED")
+        self._error_uris = self._settings.get("OAUTH2_ERROR_URIS")
 
-    def query_client(self, client_id):
-        return self._query_client(client_id)
+    async def query_client(self, client_id):
+        return await self._query_client(client_id)
 
-    def save_token(self, token, request):
-        return self._save_token(token, request)
+    async def save_token(self, token, request):
+        return await self._save_token(token, request)
 
     def get_error_uri(self, request, error):
         if self._error_uris:
             uris = dict(self._error_uris)
             return uris.get(error.error)
 
-    def create_oauth2_request(self, request):
-        return FlaskOAuth2Request(flask_req)
+    def create_oauth2_request(self, request) -> FastAPIOAuth2Request:
+        return FastAPIOAuth2Request(request)
 
-    def create_json_request(self, request):
-        return FlaskJsonRequest(flask_req)
+    def create_json_request(self, request) -> FastAPIJsonRequest:
+        return FastAPIJsonRequest(request)
 
     def handle_response(self, status_code, payload, headers):
         if isinstance(payload, dict):
-            payload = json.dumps(payload)
-        return Response(payload, status=status_code, headers=headers)
+            payload = json.dumps(payload, ensure_ascii=False)
+        return Response(payload, status_code=status_code, headers=headers)
 
     def send_signal(self, name, *args, **kwargs):
         if name == "after_authenticate_client":
