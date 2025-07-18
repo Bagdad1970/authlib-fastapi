@@ -5,8 +5,8 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Text
 
-from authlib.oauth2.rfc6749 import AuthorizationCodeMixin
-from authlib.oauth2.rfc6749 import TokenMixin
+from authlib.authlib.oauth2.rfc6749 import AuthorizationCodeMixin
+from authlib.authlib.oauth2.rfc6749 import TokenMixin
 
 
 class OAuth2AuthorizationCodeMixin(AuthorizationCodeMixin):
