@@ -1,4 +1,5 @@
 from collections import defaultdict
+from async_property import async_property
 
 from authlib.authlib.deprecate import deprecate
 
@@ -66,7 +67,7 @@ class AsyncBasicOAuth2Payload(AsyncOAuth2Payload):
         return self._data
 
     @property
-    def datalist(self) -> defaultdict[str, list]:
+    def datalist(self):# -> defaultdict[str, list]:
         return self._datalist
 
 

@@ -1,7 +1,7 @@
 from authlib.authlib.common.errors import ContinueIteration
 from authlib.authlib.deprecate import deprecate
 
-from .authenticate_client import ClientAuthentication
+from .async_authenticate_client import AsyncClientAuthentication
 from .errors import InvalidScopeError
 from .errors import OAuth2Error
 from .errors import UnsupportedGrantTypeError
@@ -13,7 +13,7 @@ from .requests import OAuth2Request
 from .util import scope_to_list
 
 
-class AuthorizationServer(Hookable):
+class AsyncAuthorizationServer(Hookable):
     """Authorization server that handles Authorization Endpoint and Token
     Endpoint.
 
@@ -30,14 +30,14 @@ class AuthorizationServer(Hookable):
         self._endpoints = {}
         self._extensions = []
 
-    def query_client(self, client_id):
+    async def query_client(self, client_id):
         """Query OAuth client by client_id. The client model class MUST
         implement the methods described by
         :class:`~authlib.oauth2.rfc6749.ClientMixin`.
         """
         raise NotImplementedError()
 
-    def save_token(self, token, request):
+    async def save_token(self, token, request):
         """Define function to save the generated token into database."""
         raise NotImplementedError()
 
@@ -114,13 +114,14 @@ class AuthorizationServer(Hookable):
         """
         self._token_generators[grant_type] = func
 
-    def authenticate_client(self, request, methods, endpoint="token"):
+    async def authenticate_client(self, request, methods, endpoint="token"):
         """Authenticate client via HTTP request information with the given
         methods, such as ``client_secret_basic``, ``client_secret_post``.
         """
         if self._client_auth is None and self.query_client:
-            self._client_auth = ClientAuthentication(self.query_client)
-        return self._client_auth(request, methods, endpoint)
+            self._client_auth = AsyncClientAuthentication(self.query_client)
+        authenticated_client = await self._client_auth(request, methods, endpoint)
+        return authenticated_client
 
     def register_client_auth_method(self, method, func):
         """Add more client auth method. The default methods are:
@@ -147,8 +148,7 @@ class AuthorizationServer(Hookable):
             )
         """
         if self._client_auth is None and self.query_client:
-            self._client_auth = ClientAuthentication(self.query_client)
-
+            self._client_auth = AsyncClientAuthentication(self.query_client)
         self._client_auth.register(method, func)
 
     def register_extension(self, extension):
@@ -278,6 +278,18 @@ class AuthorizationServer(Hookable):
                 return _create_grant(grant_cls, extensions, request, self)
         raise UnsupportedGrantTypeError(request.payload.grant_type)
 
+    async def get_token_grant(self, request):
+        """Find the token grant for current request.
+
+        :param request: OAuth2Request instance.
+        :return: grant instance
+        """
+        for grant_cls, extensions in self._token_grants:
+            check = await grant_cls.async_check_token_endpoint(request)
+            if check:
+                return _create_grant(grant_cls, extensions, request, self)
+        raise UnsupportedGrantTypeError(request.payload.grant_type)
+
     def create_endpoint_response(self, name, request=None):
         """Validate endpoint request and create endpoint response.
 
@@ -329,20 +341,20 @@ class AuthorizationServer(Hookable):
         grant.execute_hook("after_authorization_response", response)
         return response
 
-    def create_token_response(self, request=None):
+    async def create_token_response(self, request=None):
         """Validate token request and create token response.
 
         :param request: HTTP request instance
         """
         request = self.create_oauth2_request(request)
         try:
-            grant = self.get_token_grant(request)
+            grant = await self.get_token_grant(request)
         except UnsupportedGrantTypeError as error:
             return self.handle_error_response(request, error)
 
         try:
-            grant.validate_token_request()
-            args = grant.create_token_response()
+            await grant.validate_token_request()
+            args = await grant.create_token_response()
             return self.handle_response(*args)
         except OAuth2Error as error:
             return self.handle_error_response(request, error)

@@ -1,7 +1,7 @@
 import logging
 
-from authlib.common.security import generate_token
-from authlib.common.urls import add_params_to_uri
+from authlib.authlib.common.security import generate_token
+from authlib.authlib.common.urls import add_params_to_uri
 
 from ..errors import AccessDeniedError
 from ..errors import InvalidClientError

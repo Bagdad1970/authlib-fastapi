@@ -8,7 +8,9 @@ https://tools.ietf.org/html/rfc6749
 """
 
 from .authenticate_client import ClientAuthentication
+from .async_authenticate_client import AsyncClientAuthentication
 from .authorization_server import AuthorizationServer
+from .async_authorization_server import AsyncAuthorizationServer
 from .errors import AccessDeniedError
 from .errors import InsecureTransportError
 from .errors import InvalidClientError
@@ -40,6 +42,10 @@ from .requests import JsonPayload
 from .requests import JsonRequest
 from .requests import OAuth2Payload
 from .requests import OAuth2Request
+from .async_requests import AsyncJsonPayload
+from .async_requests import AsyncJsonRequest
+from .async_requests import AsyncOAuth2Payload
+from .async_requests import AsyncOAuth2Request
 from .resource_protector import ResourceProtector
 from .resource_protector import TokenValidator
 from .token_endpoint import TokenEndpoint
@@ -87,4 +93,10 @@ __all__ = [
     "RefreshTokenGrant",
     "scope_to_list",
     "list_to_scope",
+    "AsyncOAuth2Request",
+    "AsyncOAuth2Payload",
+    "AsyncJsonRequest",
+    "AsyncJsonPayload",
+    "AsyncClientAuthentication",
+    "AsyncAuthorizationServer"
 ]

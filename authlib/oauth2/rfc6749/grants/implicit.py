@@ -1,6 +1,6 @@
 import logging
 
-from authlib.common.urls import add_params_to_uri
+from authlib.authlib.common.urls import add_params_to_uri
 
 from ..errors import AccessDeniedError
 from ..errors import OAuth2Error

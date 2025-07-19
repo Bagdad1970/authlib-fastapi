@@ -46,7 +46,70 @@ class ResourceOwnerPasswordCredentialsGrant(BaseGrant, TokenEndpointMixin):
 
     GRANT_TYPE = "password"
 
-    def validate_token_request(self):
+    async def validate_token_request(self):
+        """The client makes a request to the token endpoint by adding the
+        following parameters using the "application/x-www-form-urlencoded"
+        format per Appendix B with a character encoding of UTF-8 in the HTTP
+        request entity-body:
+
+        grant_type
+             REQUIRED.  Value MUST be set to "password".
+
+        username
+             REQUIRED.  The resource owner username.
+
+        password
+             REQUIRED.  The resource owner password.
+
+        scope
+             OPTIONAL.  The scope of the access request as described by
+             Section 3.3.
+
+        If the client type is confidential or the client was issued client
+        credentials (or assigned other authentication requirements), the
+        client MUST authenticate with the authorization server as described
+        in Section 3.2.1.
+
+        For example, the client makes the following HTTP request using
+        transport-layer security (with extra line breaks for display purposes
+        only):
+
+        .. code-block:: http
+
+            POST /token HTTP/1.1
+            Host: server.example.com
+            Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
+            Content-Type: application/x-www-form-urlencoded
+
+            grant_type=password&username=johndoe&password=A3ddj3w
+        """
+        # ignore validate for grant_type, since it is validated by
+        # check_token_endpoint
+        client = await self.authenticate_token_endpoint_client()
+        log.debug("Validate token request of %r", client)
+
+        if not client.check_grant_type(self.GRANT_TYPE):
+            raise UnauthorizedClientError(
+                f"The client is not authorized to use 'grant_type={self.GRANT_TYPE}'"
+            )
+
+        params = await self.request.form
+        if "username" not in params:
+            raise InvalidRequestError("Missing 'username' in request.")
+        if "password" not in params:
+            raise InvalidRequestError("Missing 'password' in request.")
+
+        log.debug("Authenticate user of %r", params["username"])
+        user = await self.authenticate_user(params["username"], params["password"])
+        if not user:
+            raise InvalidRequestError(
+                "Invalid 'username' or 'password' in request.",
+            )
+        self.request.client = client
+        self.request.user = user
+        await self.validate_requested_scope()
+
+    async def async_validate_token_request(self):
         """The client makes a request to the token endpoint by adding the
         following parameters using the "application/x-www-form-urlencoded"
         format per Appendix B with a character encoding of UTF-8 in the HTTP
@@ -109,8 +172,9 @@ class ResourceOwnerPasswordCredentialsGrant(BaseGrant, TokenEndpointMixin):
         self.request.user = user
         self.validate_requested_scope()
 
+
     @hooked
-    def create_token_response(self):
+    async def create_token_response(self):
         """If the access token request is valid and authorized, the
         authorization server issues an access token and optional refresh
         token as described in Section 5.1.  If the request failed client
@@ -137,7 +201,7 @@ class ResourceOwnerPasswordCredentialsGrant(BaseGrant, TokenEndpointMixin):
         :returns: (status_code, body, headers)
         """
         user = self.request.user
-        scope = self.request.payload.scope
+        scope = await self.request.payload.scope
         token = self.generate_token(user=user, scope=scope)
         log.debug("Issue token %r to %r", token, self.client)
         self.save_token(token)

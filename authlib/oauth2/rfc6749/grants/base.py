@@ -1,4 +1,4 @@
-from authlib.consts import default_json_headers
+from authlib.authlib.consts import default_json_headers
 
 from ..errors import InvalidRequestError
 from ..hooks import Hookable
@@ -79,9 +79,9 @@ class BaseGrant(Hookable):
         """A method to save token into database."""
         return self.server.save_token(token, self.request)
 
-    def validate_requested_scope(self):
+    async def validate_requested_scope(self):
         """Validate if requested scope is supported by Authorization Server."""
-        scope = self.request.payload.scope
+        scope = await self.request.payload.scope
         return self.server.validate_requested_scope(scope)
 
 
@@ -96,6 +96,14 @@ class TokenEndpointMixin:
     def check_token_endpoint(cls, request: OAuth2Request):
         return (
             request.payload.grant_type == cls.GRANT_TYPE
+            and request.method in cls.TOKEN_ENDPOINT_HTTP_METHODS
+        )
+
+    @classmethod
+    async def async_check_token_endpoint(cls, request: OAuth2Request):
+        grant_type = await request.payload.grant_type
+        return (
+            grant_type == cls.GRANT_TYPE
             and request.method in cls.TOKEN_ENDPOINT_HTTP_METHODS
         )
 

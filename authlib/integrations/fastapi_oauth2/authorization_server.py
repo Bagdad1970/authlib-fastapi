@@ -3,7 +3,7 @@ from werkzeug.utils import import_string
 import json
 
 from authlib.authlib.common.security import generate_token
-from authlib.authlib.oauth2 import AuthorizationServer as _AuthorizationServer
+from authlib.authlib.oauth2 import AsyncAuthorizationServer as _AuthorizationServer
 from authlib.authlib.oauth2.rfc6750 import BearerTokenGenerator
 
 from .requests import FastAPIJsonRequest
@@ -62,10 +62,12 @@ class AuthorizationServer(_AuthorizationServer):
         self._error_uris = self._settings.get("OAUTH2_ERROR_URIS")
 
     async def query_client(self, client_id):
-        return await self._query_client(client_id)
+        client = await self._query_client(client_id)
+        return client
 
     async def save_token(self, token, request):
-        return await self._save_token(token, request)
+        token = await self._save_token(token, request)
+        return token
 
     def get_error_uri(self, request, error):
         if self._error_uris:
@@ -81,7 +83,7 @@ class AuthorizationServer(_AuthorizationServer):
     def handle_response(self, status_code, payload, headers):
         if isinstance(payload, dict):
             payload = json.dumps(payload, ensure_ascii=False)
-        return Response(payload, status_code=status_code, headers=headers)
+        return Response(content=payload, status_code=status_code, headers=headers)
 
     def send_signal(self, name, *args, **kwargs):
         if name == "after_authenticate_client":

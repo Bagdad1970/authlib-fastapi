@@ -2,7 +2,7 @@ import base64
 import binascii
 from urllib.parse import unquote
 
-from authlib.common.encoding import to_unicode
+from authlib.authlib.common.encoding import to_unicode
 
 
 def list_to_scope(scope):

@@ -3,6 +3,7 @@ from .auth import TokenAuth
 from .base import OAuth2Error
 from .client import OAuth2Client
 from .rfc6749 import AuthorizationServer
+from .rfc6749 import AsyncAuthorizationServer
 from .rfc6749 import ClientAuthentication
 from .rfc6749 import JsonRequest
 from .rfc6749 import OAuth2Request
@@ -18,4 +19,5 @@ __all__ = [
     "AuthorizationServer",
     "ClientAuthentication",
     "ResourceProtector",
+    "AsyncAuthorizationServer"
 ]

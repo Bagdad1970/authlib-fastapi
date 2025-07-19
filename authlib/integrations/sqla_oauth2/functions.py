@@ -3,7 +3,7 @@ import time
 from sqlalchemy import select
 
 
-async def create_query_client_func(session, client_model):
+def create_query_client_func(session, client_model):
     """Create an ``query_client`` async function that can be used in authorization
     server.
 
@@ -17,7 +17,7 @@ async def create_query_client_func(session, client_model):
     return query_client
 
 
-async def create_save_token_func(session, token_model):
+def create_save_token_func(session, token_model):
     """Create an ``save_token`` function that can be used in authorization
     server.
 
@@ -25,7 +25,7 @@ async def create_save_token_func(session, token_model):
     :param token_model: Token model class
     """
 
-    async def save_token(token, request):
+    def save_token(token, request):
         if request.user:
             user_id = request.user.get_user_id()
         else:
@@ -33,7 +33,7 @@ async def create_save_token_func(session, token_model):
         client = request.client
         item = token_model(client_id=client.client_id, user_id=user_id, **token)
         session.add(item)
-        await session.commit()
+        session.commit()
 
     return save_token
 

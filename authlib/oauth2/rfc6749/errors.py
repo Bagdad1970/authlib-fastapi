@@ -31,8 +31,8 @@ https://tools.ietf.org/html/rfc6749#section-5.2
 
 """
 
-from authlib.common.security import is_secure_transport
-from authlib.oauth2.base import OAuth2Error
+from authlib.authlib.common.security import is_secure_transport
+from authlib.authlib.oauth2.base import OAuth2Error
 
 __all__ = [
     "OAuth2Error",
